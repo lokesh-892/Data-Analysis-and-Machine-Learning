@@ -1,14 +1,16 @@
+#setting up the imports required for the client
 import pygame
 from network import Network
 import pickle
 pygame.font.init()
 
+#initializing the game box and basic config
 width = 700
 height = 700
 win = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Client")
 
-
+#buttons for the game with methods
 class Button:
     def __init__(self, text, x, y, color):
         self.text = text
@@ -17,13 +19,15 @@ class Button:
         self.color = color
         self.width = 150
         self.height = 100
-
+    
+    #draw method
     def draw(self, win):
         pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height))
         font = pygame.font.SysFont("comicsans", 40)
         text = font.render(self.text, 1, (255,255,255))
         win.blit(text, (self.x + round(self.width/2) - round(text.get_width()/2), self.y + round(self.height/2) - round(text.get_height()/2)))
-
+    
+    #click method
     def click(self, pos):
         x1 = pos[0]
         y1 = pos[1]
@@ -32,10 +36,11 @@ class Button:
         else:
             return False
 
-
+# function to redraw window after every round of RPS
 def redrawWindow(win, game, p):
     win.fill((128,128,128))
-
+    
+    #if server is connected to client
     if not(game.connected()):
         font = pygame.font.SysFont("comicsans", 80)
         text = font.render("Waiting for Player...", 1, (255,0,0), True)
@@ -80,7 +85,7 @@ def redrawWindow(win, game, p):
 
     pygame.display.update()
 
-
+# main method
 btns = [Button("Rock", 50, 500, (0,0,0)), Button("Scissors", 250, 500, (255,0,0)), Button("Paper", 450, 500, (0,255,0))]
 def main():
     run = True
@@ -138,6 +143,7 @@ def main():
 
         redrawWindow(win, game, player)
 
+# run app when main is called
 def menu_screen():
     run = True
     clock = pygame.time.Clock()
