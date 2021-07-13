@@ -1,8 +1,6 @@
-# KELAS GAME, BERISI SELURUH INFORMASI PERMAINAN #
-
 class Game:
 
-	# INISIASI VARIABLE #
+	# INITIALIZE VARIABLEs #
 	def __init__(self, id):
 		self.p1Move = False
 		self.p2Move = False
@@ -23,7 +21,7 @@ class Game:
 		else:
 			self.p2Move = True
 
-	# CONNECT KE SERVER #
+	# CONNECT THE SERVER #
 	def connected(self):
 		return self.ready
 
@@ -52,7 +50,7 @@ class Game:
 
 		return winner
 
-	# RESET GERAKAN #
+	# RESET GAME #
 	def resetMove(self):
 		self.p1Move = False
 		self.p2Move = False
