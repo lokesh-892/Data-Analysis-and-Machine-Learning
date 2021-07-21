@@ -13,7 +13,7 @@ class Game:
 	def get_player_move(self, p):
 		return self.moves[p]
 
-	# INISIASI GERAKAN #
+	# MOVEMENT INITIATION #
 	def play(self, player, move):
 		self.moves[player] = move
 		if player == 0:
