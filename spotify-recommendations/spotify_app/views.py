@@ -130,57 +130,72 @@ class RecommendationsView(ListView):
         social = self.request.user.social_auth.get(provider="spotify")
         token = social.extra_data["access_token"]
 
-        recs = ds.main(playlist_id=context["chosen_playlist"].playlist_id, username=username, token=token)
+        try:
+            recs = ds.main(playlist_id=context["chosen_playlist"].playlist_id, username=username, token=token)
 
-        if recs.shape[0] > 5:  # order recommendations alternating clusters
-            recs = show_diverse_recs(recs, 5)
-        else:
-            pass
+            if recs.shape[0] > 5:  # order recommendations alternating clusters
+                recs = show_diverse_recs(recs, 5)
+            else:
+                pass
 
-        context["active_user"] = username
-        sp = spotipy.Spotify(auth=token)
-        social = self.request.user.social_auth.get(provider="spotify")
-        context["token"] = social.extra_data["access_token"]
-        social.extra_data["spotify_me"] = spotipy.Spotify(auth=context["token"]).me()
-        context["first_name"] = social.extra_data["spotify_me"]["display_name"].split()[0]
-        #context["last_name"] = social.extra_data["spotify_me"]["display_name"].split('.')[1]
+            context["active_user"] = username
+            sp = spotipy.Spotify(auth=token)
+            social = self.request.user.social_auth.get(provider="spotify")
+            context["token"] = social.extra_data["access_token"]
+            social.extra_data["spotify_me"] = spotipy.Spotify(auth=context["token"]).me()
+            context["first_name"] = social.extra_data["spotify_me"]["display_name"].split()[0]
+            #context["last_name"] = social.extra_data["spotify_me"]["display_name"].split('.')[1]
 
-        if recs.shape[0] > 0:
-            logger.info("creating song db objects")
-            logger.info(f"recommendations df shape {recs.shape}")
+            if recs.shape[0] > 0:
+                logger.info("creating song db objects")
+                logger.info(f"recommendations df shape {recs.shape}")
 
-            rec_tracks = sp.tracks(recs.index.values)
+                rec_tracks = sp.tracks(recs.index.values)
 
-            for i, rec in recs.iterrows():
-                tmp_song = Song()
-                tmp_song.song_id = i
-                tmp_song.song_name = rec_tracks["tracks"][recs.index.get_loc(i)]["name"]
-                tmp_song.artist_name = rec_tracks["tracks"][recs.index.get_loc(i)]["artists"][0]["name"]
-                tmp_song.song_is_explicit = recs.loc[i, :]["explicit"]
-                tmp_song.song_duration_ms = recs.loc[i, :]["duration_ms"]
-                tmp_song.recommended_user = username
-                tmp_song.date_created = time.time()
-                tmp_song.parent_playlist_id = context["chosen_playlist"].playlist_id
-                tmp_song.album_cover_art = rec_tracks["tracks"][recs.index.get_loc(i)]["album"]["images"][1][
-                    "url"
-                ]
-                tmp_song.save()
+                for i, rec in recs.iterrows():
+                    tmp_song = Song()
+                    tmp_song.song_id = i
+                    tmp_song.song_name = rec_tracks["tracks"][recs.index.get_loc(i)]["name"]
+                    tmp_song.artist_name = rec_tracks["tracks"][recs.index.get_loc(i)]["artists"][0]["name"]
+                    tmp_song.song_is_explicit = recs.loc[i, :]["explicit"]
+                    tmp_song.song_duration_ms = recs.loc[i, :]["duration_ms"]
+                    tmp_song.recommended_user = username
+                    tmp_song.date_created = time.time()
+                    tmp_song.parent_playlist_id = context["chosen_playlist"].playlist_id
+                    tmp_song.album_cover_art = rec_tracks["tracks"][recs.index.get_loc(i)]["album"]["images"][1][
+                        "url"
+                    ]
+                    tmp_song.save()
 
-            context["script_ran"] = True
-            context["no_recommendations"] = False
-        else:
+                context["script_ran"] = True
+                context["no_recommendations"] = False
+            else:
+                context["remove_rec_button"] = True
+                context["no_recommendations"] = True
+                logger.info("no recommendations!")
+
+            logger.info(recs)
+            if len(recs) > 5:
+                context["recs"] = Song.objects.all().filter(
+                    recommended_user=username, parent_playlist_id=context["chosen_playlist"].playlist_id
+                )[:5]
+            else:
+                context["recs"] = Song.objects.all().filter(
+                    recommended_user=username, parent_playlist_id=context["chosen_playlist"].playlist_id
+                )
+
+            return context
+
+        except Exception as e:
+            context["active_user"] = username
+            sp = spotipy.Spotify(auth=token)
+            social = self.request.user.social_auth.get(provider="spotify")
+            context["token"] = social.extra_data["access_token"]
+            social.extra_data["spotify_me"] = spotipy.Spotify(auth=context["token"]).me()
+            context["first_name"] = social.extra_data["spotify_me"]["display_name"].split()[0]
             context["remove_rec_button"] = True
-            context["no_recommendations"] = True
+            #context["no_recommendations"] = True
+            context["Zero_liked_songs"] = True
             logger.info("no recommendations!")
+            return context
 
-        logger.info(recs)
-        if len(recs) > 5:
-            context["recs"] = Song.objects.all().filter(
-                recommended_user=username, parent_playlist_id=context["chosen_playlist"].playlist_id
-            )[:5]
-        else:
-            context["recs"] = Song.objects.all().filter(
-                recommended_user=username, parent_playlist_id=context["chosen_playlist"].playlist_id
-            )
-
-        return context
